@@ -17,6 +17,8 @@
 #
 set -ex
 
+superset db upgrade
+
 if [ "$#" -ne 0 ]; then
     exec "$@"
 elif [ "$SUPERSET_ENV" = "development" ]; then

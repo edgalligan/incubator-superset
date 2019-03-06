@@ -35,25 +35,45 @@ RUN apt-get install -y build-essential libssl-dev \
 # Install extra useful tool for development
 RUN apt-get install -y vim less postgresql-client redis-tools
 
+RUN apt-get purge -y nodejs
+
+RUN apt-get install ca-certificates
+
 # Install nodejs for custom build
 # https://superset.incubator.apache.org/installation.html#making-your-own-build
 # https://nodejs.org/en/download/package-manager/
-RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
-    && apt-get install -y nodejs
+
+RUN curl -skfL https://deb.nodesource.com/setup_10.x | sed 's/curl -s/curl -sk/g' | sed 's/apt-get update/apt-get update -o Acquire::https::Verify-Peer=false/g' | bash -x -E - \
+    &&  apt-get install -y nodejs -o Acquire::https::Verify-Peer=false
+
+RUN nodejs -v && npm -v
 
 WORKDIR /home/superset
 
 COPY requirements.txt .
 COPY requirements-dev.txt .
 
-RUN pip install --upgrade setuptools pip \
-    && pip install -r requirements.txt -r requirements-dev.txt \
+RUN pip install --trusted-host pypi.org pip --upgrade \ 
+    && pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org --upgrade setuptools pip 
+
+RUN pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org pytest-runner 
+
+RUN pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org -r requirements.txt -r requirements-dev.txt \
     && rm -rf /root/.cache/pip
+
+RUN pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org sasl \
+    && pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org thrift \
+    && pip install --trusted-host files.pythonhosted.org --trusted-host pypi.org --trusted-host pypi.python.org thrift_sasl
+
+RUN apt-get install -y sasl2-bin
 
 COPY --chown=superset:superset superset superset
 
 ENV PATH=/home/superset/superset/bin:$PATH \
     PYTHONPATH=/home/superset/superset/:$PYTHONPATH
+
+COPY cabenefitfocuscom.crt .
+RUN cat cabenefitfocuscom.crt >> /etc/ssl/certs/ca-certificates.crt
 
 USER superset
 
@@ -67,6 +87,6 @@ COPY contrib/docker/docker-init.sh .
 COPY contrib/docker/docker-entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
-HEALTHCHECK CMD ["curl", "-f", "http://localhost:8088/health"]
+#HEALTHCHECK CMD ["curl", "-f", "http://localhost:8088/health"]
 
 EXPOSE 8088

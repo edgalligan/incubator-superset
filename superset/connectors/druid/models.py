@@ -58,6 +58,9 @@ from superset.utils.core import (
     DimSelector, DTTM_ALIAS, flasher,
 )
 
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+
 DRUID_TZ = conf.get('DRUID_TZ')
 POST_AGG_TYPE = 'postagg'
 metadata = Model.metadata  # pylint: disable=no-member
@@ -150,13 +153,13 @@ class DruidCluster(Model, AuditMixinNullable, ImportMixin):
     def get_datasources(self):
         endpoint = self.get_base_broker_url() + '/datasources'
         auth = requests.auth.HTTPBasicAuth(self.broker_user, self.broker_pass)
-        return json.loads(requests.get(endpoint, auth=auth).text)
+        return json.loads(requests.get(endpoint, auth=auth, verify=False).text)
 
     def get_druid_version(self):
         endpoint = self.get_base_url(
-            self.broker_host, self.broker_port) + '/status'
+            self.broker_host, self.broker_port) + '/gateway/default/druid-broker/status'
         auth = requests.auth.HTTPBasicAuth(self.broker_user, self.broker_pass)
-        return json.loads(requests.get(endpoint, auth=auth).text)['version']
+        return json.loads(requests.get(endpoint, auth=auth, verify=False).text)['version']
 
     @property
     @utils.memoized

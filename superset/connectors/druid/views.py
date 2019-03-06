@@ -171,6 +171,11 @@ class DruidClusterModelView(SupersetModelView, DeleteMixin, YamlExportMixin):  #
         'cache_timeout', 'cluster_name',
     ]
     edit_columns = add_columns
+    show_columns = [
+        'verbose_name', 'broker_host', 'broker_port',
+        'broker_user', 'broker_endpoint',
+        'cache_timeout', 'cluster_name',
+    ]
     list_columns = ['cluster_name', 'metadata_last_refreshed']
     search_columns = ('cluster_name',)
     label_columns = {
